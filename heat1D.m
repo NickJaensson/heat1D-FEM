@@ -120,23 +120,27 @@ for step = 1:nstep
     % store the old solution
     solold = sol;
     
-    % plot the solution
+    % postprocessing
     if mod(step,plotevery) == 0
     
+        % the numerical solution
         plot(0:h:L,sol,'-','color',[step/nstep 0 1],'LineWidth',2)
         
-        %plot(0:L/1000:L,erfc((0:L/1000:L)/sqrt(4*alpha*time)),'-k','LineWidth',2)
-        
-        %if step == 1
+        % calculate coefficients of the anlytical solution
+        if exist('Bn','var') == 0
            Bn = zeros(nseries,1);
            for n = 1:nseries
               Bn(n) = -T0*2*(-1+(-1)^n)/(n*pi);
            end
-       % end
+        end
+        
+        % calculate the analytical solution
         solex = zeros(nplot+1,1);
         for n = 1:nseries
            solex = solex + (Bn(n)*sin(n*pi*xplot/L)*exp(-(n*pi/L)^2*alpha*time))';
         end
+        
+        % plot the analytical solution
         plot(xplot,solex,'-k','LineWidth',2)
 
     end
