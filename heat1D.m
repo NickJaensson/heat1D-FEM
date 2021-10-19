@@ -57,7 +57,9 @@ for step = 1:nstep
     disp(['step = ',num2str(step),' time = ',num2str(time)])
     
     % initialize the element matrix and rhs 
-    K = zeros(ne+1,ne+1);
+    if step == 1  
+        K = zeros(ne+1,ne+1);
+    end
     f = zeros(ne+1,1);
 
     % loop over the elements and assemble the system matrix
@@ -79,18 +81,31 @@ for step = 1:nstep
         % get the previous solution in the nodes
         Told = [solold(ie) solold(ie+1)];
         
-        % initialize local system matrix and RHS
-        Ke = 0; fe = 0;
+        % system matrix only has to be assembled once (does not change)
+        if step == 1
+            
+            % initialize local system matrix
+            Ke = 0; 
+
+            % loop over the integration points
+            for k = 1:2
+              Ke = Ke + w(k)*Ne(:,k)*Ne(:,k)'*J(k) + ...
+                           + deltat*alpha*w(k)*gradNe(:,k)*gradNe(:,k)'*J(k);
+            end
+
+            % add to the global system matrix
+            K(ie:ie+1,ie:ie+1) = K(ie:ie+1,ie:ie+1) + Ke;
+        
+        end
+        
+        % initialize local RHS
+        fe = 0;
         
         % loop over the integration points
         for k = 1:2
-          Ke = Ke + w(k)*Ne(:,k)*Ne(:,k)'*J(k) + ...
-                       + deltat*alpha*w(k)*gradNe(:,k)*gradNe(:,k)'*J(k);
           fe = fe + w(k)*Ne(:,k)*Ne(:,k)'*Told'*J(k);
-        end
-
-        % add to the global system matrix
-        K(ie:ie+1,ie:ie+1) = K(ie:ie+1,ie:ie+1) + Ke;
+        end       
+        
         f(ie:ie+1) = f(ie:ie+1) + fe;  
         
     end
