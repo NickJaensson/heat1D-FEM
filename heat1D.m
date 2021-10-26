@@ -4,16 +4,17 @@ close all; clear
 % comparison to analytical solution (a series until infinity)
 
 % problem parameters
-ne = 80;          % number of elements
+ne = 50;          % number of elements
 alpha = 1;        % diffusion coefcient
 L = 0.1;          % length of the domain
 deltat = 1e-5;    % time step size
 nstep = 100;      % number of time steps
 plotevery = 10;   % plot every ... time step
-Twall = 0;        % wall temperature
+Twall = 0.1;      % wall temperature
 T0    = 1;        % initial temperature
 nplot = 200;      % number of points for plotting analytical solution
 nseries = 100;    % number of terms in analytical solution
+keepK = 1;        % 1: keep elem matrix between time steps  0: do not keep
 
 % derived parameters
 h = L/ne;       % element size
@@ -57,7 +58,7 @@ for step = 1:nstep
     disp(['step = ',num2str(step),' time = ',num2str(time)])
     
     % initialize the element matrix and rhs 
-    if step == 1  
+    if step == 1 && keepK
         K = zeros(ne+1,ne+1);
     end
     f = zeros(ne+1,1);
@@ -82,7 +83,7 @@ for step = 1:nstep
         Told = [solold(ie) solold(ie+1)];
         
         % system matrix only has to be assembled once (does not change)
-        if step == 1
+        if step == 1 && keepK
             
             % initialize local system matrix
             Ke = 0; 
@@ -109,17 +110,42 @@ for step = 1:nstep
         f(ie:ie+1) = f(ie:ie+1) + fe;  
         
     end
-    
-    % add boundary condition on the left boundary
-    K(1,:) = 0; K(1,1) = 1; f(1) = Twall;
-    K(end,:) = 0; K(end,end) = 1; f(end) = Twall;
+
+    % add boundary condition on the left and right boundary
+    % NOTE: see userguide of eztfem for details on this approach
+
+    % indices of essential BCs
+    iess = [1 ne+1];
+
+    % indices of "free" dofs
+    iu = 2:ne;
+
+    % make a system vector with the essential BCs
+    uess = zeros(ne+1,1);
+    uess(iess) = Twall;
+
+    if step == 1 && keepK
+
+      % extract Kup
+      Kup = K(iu,iess);
+
+      % modify K
+      K(iu,iess) = 0;                     % Kup = 0
+      K(iess,iu) = 0;                     % Kpu = 0
+      K(iess,iess) = eye(length(iess));   % Kpp = I
+
+    end
+
+    % modify f
+    f(iu) = f(iu) - Kup * uess(iess) ; % fu = fu - Kup * up
+    f(iess) = uess(iess) ;             % fp = up
 
     % solve the linear system
     sol = K\f;
     
     % store the old solution
     solold = sol;
-    
+
     % postprocessing
     if mod(step,plotevery) == 0
     
@@ -127,10 +153,12 @@ for step = 1:nstep
         plot(0:h:L,sol,'-','color',[step/nstep 0 1],'LineWidth',2)
         
         % calculate coefficients of the anlytical solution
+        % NOTE: assume Twall = 0 and T0 = 1 here, and compensate for the 
+        % difference later
         if exist('Bn','var') == 0
            Bn = zeros(nseries,1);
            for n = 1:nseries
-              Bn(n) = -T0*2*(-1+(-1)^n)/(n*pi);
+              Bn(n) = -2*(-1+(-1)^n)/(n*pi);
            end
         end
         
@@ -140,8 +168,8 @@ for step = 1:nstep
            solex = solex + (Bn(n)*sin(n*pi*xplot/L)*exp(-(n*pi/L)^2*alpha*time))';
         end
         
-        % plot the analytical solution
-        plot(xplot,solex,'-k','LineWidth',2)
+        % plot the analytical solution using real values for T0 and Twall
+        plot(xplot,Twall+solex*(T0-Twall),'-k','LineWidth',2)
 
     end
     
@@ -152,4 +180,4 @@ xlabel('$x$','Interpreter','latex')
 ylabel('$T$','Interpreter','latex')
 ax = gca; 
 ax.FontSize = 24;
-
+ylim([min([Twall T0]) max([Twall T0])]);
