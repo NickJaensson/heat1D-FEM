@@ -58,7 +58,7 @@ for step = 1:nstep
     disp(['step = ',num2str(step),' time = ',num2str(time)])
     
     % initialize the element matrix and rhs 
-    if step == 1 && keepK
+    if ( step == 1 && keepK ) || ~keepK
         K = zeros(ne+1,ne+1);
     end
     f = zeros(ne+1,1);
@@ -83,7 +83,7 @@ for step = 1:nstep
         Told = [solold(ie) solold(ie+1)];
         
         % system matrix only has to be assembled once (does not change)
-        if step == 1 && keepK
+        if ( step == 1 && keepK ) || ~keepK
             
             % initialize local system matrix
             Ke = 0; 
@@ -124,7 +124,7 @@ for step = 1:nstep
     uess = zeros(ne+1,1);
     uess(iess) = Twall;
 
-    if step == 1 && keepK
+    if ( step == 1 && keepK ) || ~keepK
 
       % extract Kup
       Kup = K(iu,iess);
