@@ -6,24 +6,27 @@ close all; clear
 % problem parameters
 ne = 50;           % number of elements
 alpha = 1;         % thermal diffusivity coefcient
-L = 0.1;           % length of the domain
-deltat = 1e-5;     % time step size
+ox = 0;            % origin of the domain
+L = 1;             % length of the domain
+deltat = 1e-3;     % time step size
 nstep = 100;       % number of time steps
 plotevery = 10;    % plot every ... time step
 nplot = 200;       % number of points for plotting analytical solution
 nseries = 100;     % number of terms in analytical solution
+ana = 1;           % plot analytical sol 1: Cartesian 2: axisymm.
 keepK = 1;         % 1: keep elem matrix between time steps  0: do not keep
-BCs = [1 1];       % BCs(1) for left and BCs(2) right side, with values:
+coorsys = 0;       % 0: Cartesion, 1: axisymmetric
+BCs = [0 0];       % BCs(1) for left and BCs(2) right side, with values:
                    % 0: Dirichlet, 1: Neumann, 2: Robin
 T0    = 1;         % initial temperature
 Twall = [0.1 0.1]; % wall temperature in case BCs = 0
-flux = [1 5];      % heat flux / (rho * cp) in case BCs = 1
+flux = [0 5];      % heat flux / (rho * cp) in case BCs = 1
 hheat = [10 5];    % heat transfer coeff. / (rho * cp) in case BCs = 2
 Tinf = [0 0];      % temperature at inf. in case BCs = 2
 
 % derived parameters
 h = L/ne;       % element size
-xnod = 0:h:L;   % nodal coordinates
+xnod = ox:h:(ox+L);   % nodal coordinates
 time = 0;       % initial time
 
 % the location of the integration points (parametric domain is [-1:1])
@@ -45,10 +48,17 @@ sol = zeros(ne+1,1)+T0;
 
 % plot the solution
 figure(1); hold on
-plot(0:h:L,sol,'-','color',[0 0 1],'LineWidth',2)
-xplot = 0:L/nplot:L;
-plot(xplot,0.*xplot+T0,'-k','LineWidth',2)
+plot(ox:h:(ox+L),sol,'-','color',[0 0 1],'LineWidth',2)
+xplot = ox:L/nplot:(ox+L);
+if any ( ana == [1,2] )
+    plot(xplot,0.*xplot+T0,'-k','LineWidth',2)
+end
 
+% load the Bessel roots (these were found with chebfun)
+if ana == 2
+    br = load('31831_Bessel_roots.txt');
+end
+    
 % store the old solution
 solold = sol;
 
@@ -74,7 +84,7 @@ for step = 1:nstep
         
         % determine the Jacobian in each integration point
         J = transpose(gradxiNe'*re);
-        
+
         % derivaties of the shape function wrt to x in each integration 
         % point gradNe(ndf,ninti)
         gradNe = gradxiNe./J;
@@ -82,6 +92,11 @@ for step = 1:nstep
         % the coordinates in the integration points
         r = transpose(Ne'*re);
 
+        % integration in a cylindrical coordinate system
+        if coorsys == 1 
+            J = J*2*pi.*r;
+        end
+        
         % get the previous solution in the nodes
         Told = [solold(ie) solold(ie+1)];
         
@@ -110,39 +125,44 @@ for step = 1:nstep
           fe = fe + w(k)*Ne(:,k)*Ne(:,k)'*Told'*J(k);
         end       
         
+        % add to the total RHS vector
         f(ie:ie+1) = f(ie:ie+1) + fe;  
         
     end
     
+    % get factor depending on coordinate system
+    fac = 1;
+    if coorsys == 1
+        facL = 2*pi*ox; % left boundary
+        facR = 2*pi*(ox+L); % right boundary
+    end
+        
     % add Neumann boundary conditions
-
     if ( BCs(1) == 1 )            
-      f(1) = f(1) - deltat*flux(1);
+        f(1) = f(1) - fac*deltat*flux(1);
     end
 
     if ( BCs(2) == 1 )    
-      f(end) = f(end) - deltat*flux(2);
+        f(end) = f(end) - fac*deltat*flux(2);
     end
     
     % add Robin boundary conditions
-
     if ( BCs(1) == 2 )   
-      if ( step == 1 && keepK ) || ~keepK
-        K(1,1) = K(1,1) + deltat*hheat(1);
-      end
-      f(1) = f(1) + deltat*hheat(1)*Tinf(1);
+        if ( step == 1 && keepK ) || ~keepK
+            K(1,1) = K(1,1) + fac*deltat*hheat(1);
+        end
+        f(1) = f(1) + fac*deltat*hheat(1)*Tinf(1);
     end
 
     if ( BCs(2) == 2 ) 
-      if ( step == 1 && keepK ) || ~keepK
-        K(end,end) = K(end,end) + deltat*hheat(2);
-      end        
-      f(end) = f(end) + deltat*hheat(2)*Tinf(2);
+        if ( step == 1 && keepK ) || ~keepK
+            K(end,end) = K(end,end) + fac*deltat*hheat(2);
+        end        
+        f(end) = f(end) + fac*deltat*hheat(2)*Tinf(2);
     end    
             
     % add essential boundary conditions
     % NOTE: see userguide of eztfem for details on this approach
-
     if any ( BCs == 0 )
         
         % make a system vector with the essential BCs
@@ -192,27 +212,52 @@ for step = 1:nstep
     if mod(step,plotevery) == 0
     
         % the numerical solution
-        plot(0:h:L,sol,'-','color',[step/nstep 0 1],'LineWidth',2)
+        plot(ox:h:(ox+L),sol,'-','color',[step/nstep 0 1],'LineWidth',2)
         
-        % calculate coefficients of the anlytical solution
-        % NOTE: assume Twall = 0 and T0 = 1 here, and compensate for the 
-        % difference later
-        if exist('Bn','var') == 0
-           Bn = zeros(nseries,1);
-           for n = 1:nseries
-              Bn(n) = -2*(-1+(-1)^n)/(n*pi);
-           end
-        end
-        
-        % calculate the analytical solution
-        solex = zeros(nplot+1,1);
-        for n = 1:nseries
-           solex = solex + (Bn(n)*sin(n*pi*xplot/L)*exp(-(n*pi/L)^2*alpha*time))';
-        end
-        
-        % plot the analytical solution using real values for T0 and Twall
-        plot(xplot,Twall+solex*(T0-Twall),'-k','LineWidth',2)
+        if ana == 1
 
+            % calculate coefficients of the anlytical solution once
+            % NOTE: assume Twall = 0 and T0 = 1 here, and compensate for the 
+            % difference later
+            if exist('Bn','var') == 0
+               Bn = zeros(nseries,1);
+               for n = 1:nseries
+                  Bn(n) = -2*(-1+(-1)^n)/(n*pi);
+               end
+            end
+
+            % calculate the analytical solution
+            solex = zeros(nplot+1,1);
+            for n = 1:nseries
+               solex = solex + (Bn(n)*sin(n*pi*xplot/L)*exp(-(n*pi/L)^2*alpha*time))';
+            end
+
+            % plot the analytical solution using real values for T0 and Twall
+            plot(xplot,Twall+solex*(T0-Twall),'-k','LineWidth',2)
+            
+        elseif ana == 2
+            
+            % only calculate Bessel functions once
+            if exist('rr','var') == 0
+               rr = zeros(nseries,nplot+1);
+               brr = zeros(nseries,1);
+               for n = 1:nseries
+                   rr(n,:) = besselj(0,br(n)*xplot);
+                   brr(n) = br(n)*besselj(1,br(n));
+               end
+            end
+
+            % calculate the analytical solution
+            solex = zeros(nplot+1,1);
+            for n = 1:nseries
+               solex = solex + 2*exp(-br(n)^2*time)*rr(n,:)' ./ brr(n);
+            end
+            
+            % plot the analytical solution using real values for T0 and Twall
+            plot(xplot,Twall+solex*(T0-Twall),'-k','LineWidth',2)
+            
+        end
+        
     end
     
 end
@@ -222,7 +267,8 @@ xlabel('$x$','Interpreter','latex')
 ylabel('$T$','Interpreter','latex')
 ax = gca; 
 ax.FontSize = 24;
-%ylim([min([Twall T0]) max([Twall T0])]);
+xlim([ox ox+L])
+%ylim([0 1]);
 
 disp(['outward flux at left boundary = ',num2str((sol(2) - sol(1)) / h)])
 disp(['outward flux at right boundary = ',num2str(-(sol(end) - sol(end-1)) / h)])
