@@ -271,15 +271,15 @@ xlim([ox ox+L])
 %ylim([0 1]);
 
 disp(['outward flux at left boundary = ',num2str((sol(2) - sol(1)) / h)])
-if BC(1) == 1
+if BCs(1) == 1
     disp(['which should be = ',num2str(flux(1))])
-elseif BC(1) == 2
+elseif BCs(1) == 2
     disp(['which should be = ',num2str(hheat(1)*(sol(1)-Tinf(1)))])
 end
 
 disp(['outward flux at right boundary = ',num2str(-(sol(end) - sol(end-1)) / h)])
-if BC(2) == 1
+if BCs(2) == 1
     disp(['which should be = ',num2str(flux(2))])
-elseif BC(2) == 2
+elseif BCs(2) == 2
     disp(['which should be = ',num2str(hheat(2)*(sol(end)-Tinf(2)))])
 end
