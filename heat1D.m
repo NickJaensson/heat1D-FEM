@@ -108,8 +108,8 @@ for step = 1:nstep
 
             % loop over the integration points
             for k = 1:2
-              Ke = Ke + w(k)*Ne(:,k)*Ne(:,k)'*J(k) + ...
-                           + deltat*alpha*w(k)*gradNe(:,k)*gradNe(:,k)'*J(k);
+              Ke = Ke + (1/deltat)*w(k)*Ne(:,k)*Ne(:,k)'*J(k) + ...
+                           + alpha*w(k)*gradNe(:,k)*gradNe(:,k)'*J(k);
             end
 
             % add to the global system matrix
@@ -122,7 +122,7 @@ for step = 1:nstep
         
         % loop over the integration points
         for k = 1:2
-          fe = fe + w(k)*Ne(:,k)*Ne(:,k)'*Told'*J(k);
+          fe = fe + (1/deltat)*w(k)*Ne(:,k)*Ne(:,k)'*Told'*J(k);
         end       
         
         % add to the total RHS vector
@@ -139,26 +139,26 @@ for step = 1:nstep
         
     % add Neumann boundary conditions
     if ( BCs(1) == 1 )            
-        f(1) = f(1) - facL*deltat*flux(1);
+        f(1) = f(1) - facL*flux(1);
     end
 
     if ( BCs(2) == 1 )    
-        f(end) = f(end) - facR*deltat*flux(2);
+        f(end) = f(end) - facR*flux(2);
     end
     
     % add Robin boundary conditions
     if ( BCs(1) == 2 )   
         if ( step == 1 && keepK ) || ~keepK
-            K(1,1) = K(1,1) + facL*deltat*hheat(1);
+            K(1,1) = K(1,1) + facL*hheat(1);
         end
-        f(1) = f(1) + facL*deltat*hheat(1)*Tinf(1);
+        f(1) = f(1) + facL*hheat(1)*Tinf(1);
     end
 
     if ( BCs(2) == 2 ) 
         if ( step == 1 && keepK ) || ~keepK
-            K(end,end) = K(end,end) + facR*deltat*hheat(2);
+            K(end,end) = K(end,end) + facR*hheat(2);
         end        
-        f(end) = f(end) + facR*deltat*hheat(2)*Tinf(2);
+        f(end) = f(end) + facR*hheat(2)*Tinf(2);
     end    
             
     % add essential boundary conditions
