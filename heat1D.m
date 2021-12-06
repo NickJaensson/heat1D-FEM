@@ -131,7 +131,7 @@ for step = 1:nstep
     end
     
     % get factor depending on coordinate system
-    fac = 1;
+    facL = 1; facR = 1;
     if coorsys == 1
         facL = 2*pi*ox; % left boundary
         facR = 2*pi*(ox+L); % right boundary
@@ -139,26 +139,26 @@ for step = 1:nstep
         
     % add Neumann boundary conditions
     if ( BCs(1) == 1 )            
-        f(1) = f(1) - fac*deltat*flux(1);
+        f(1) = f(1) - facL*deltat*flux(1);
     end
 
     if ( BCs(2) == 1 )    
-        f(end) = f(end) - fac*deltat*flux(2);
+        f(end) = f(end) - facR*deltat*flux(2);
     end
     
     % add Robin boundary conditions
     if ( BCs(1) == 2 )   
         if ( step == 1 && keepK ) || ~keepK
-            K(1,1) = K(1,1) + fac*deltat*hheat(1);
+            K(1,1) = K(1,1) + facL*deltat*hheat(1);
         end
-        f(1) = f(1) + fac*deltat*hheat(1)*Tinf(1);
+        f(1) = f(1) + facL*deltat*hheat(1)*Tinf(1);
     end
 
     if ( BCs(2) == 2 ) 
         if ( step == 1 && keepK ) || ~keepK
-            K(end,end) = K(end,end) + fac*deltat*hheat(2);
+            K(end,end) = K(end,end) + facR*deltat*hheat(2);
         end        
-        f(end) = f(end) + fac*deltat*hheat(2)*Tinf(2);
+        f(end) = f(end) + facR*deltat*hheat(2)*Tinf(2);
     end    
             
     % add essential boundary conditions
@@ -271,4 +271,15 @@ xlim([ox ox+L])
 %ylim([0 1]);
 
 disp(['outward flux at left boundary = ',num2str((sol(2) - sol(1)) / h)])
+if BC(1) == 1
+    disp(['which should be = ',num2str(flux(1))])
+elseif BC(1) == 2
+    disp(['which should be = ',num2str(hheat(1)*(sol(1)-Tinf(1)))])
+end
+
 disp(['outward flux at right boundary = ',num2str(-(sol(end) - sol(end-1)) / h)])
+if BC(2) == 1
+    disp(['which should be = ',num2str(flux(2))])
+elseif BC(2) == 2
+    disp(['which should be = ',num2str(hheat(2)*(sol(end)-Tinf(2)))])
+end
