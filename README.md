@@ -35,14 +35,11 @@ $$T - \Delta t \alpha \frac{\partial^2 T}{\partial x^2} = T_n$$
 where $\alpha = \kappa / (\rho c_\mathrm{p})$ is the thermal diffusivity.
 
 Next, the integral form of the differential equation is written as: find $T$ such that
-$$\int v  T dl - \int \Delta t \alpha v \frac{\partial^2 T}{\partial x^2} dl = 
-\int v T_n dl$$
+$$\int v  T dl - \int \Delta t \alpha v \frac{\partial^2 T}{\partial x^2} dl = \int v T_n dl$$
 for all $v$.
 
 From integration by parts, we get the following weak form: find $T$ such that
-$$\int v  T dl + \int \Delta t \alpha \frac{\partial v}{\partial x} 
-\frac{\partial T}{\partial x} dl - \Delta t \alpha \left.v\frac{\partial T}{\partial x}\right|_{x=L} + 
-\Delta t \alpha \left.v\frac{\partial T}{\partial x}\right|_{x=0} = \int v T_n dl$$
+$$\int v  T dl + \int \Delta t \alpha \frac{\partial v}{\partial x} \frac{\partial T}{\partial x} dl - \Delta t \alpha \left.v\frac{\partial T}{\partial x}\right|\_{x=L} + \Delta t \alpha \left.v\frac{\partial T}{\partial x}\right|\_{x=0} = \int v T_n dl$$
 for all $v$.
 
 Neumann boundary conditions
@@ -55,9 +52,7 @@ the boundary terms. Rewriting the defition of the flux as given above:
 
 This yields:
 
-$$\int v  T dl + \int \Delta t \alpha \frac{\partial v}{\partial x} 
-\frac{\partial T}{\partial x} dl = - \Delta t \bar{q}_0 \left.v\right|_{x=L} 
-- \Delta t \bar{q}_0 \left.v\right|_{x=0} + \int v T_n dl$$
+$$\int v  T dl + \int \Delta t \alpha \frac{\partial v}{\partial x} \frac{\partial T}{\partial x} dl = - \Delta t \bar{q}\_0 \left.v\right|\_{x=L} - \Delta t \bar{q}_0 \left.v\right|_{x=0} + \int v T_n dl$$
 
 where $\bar{q}_0 = q_0/(\rho c_\mathrm{p})$.
 
@@ -71,11 +66,6 @@ the boundary terms. Rewriting the defition of the flux as given above:
 * at $x=L$ we have $-\alpha \partial T/\partial x=h(T-T_\infty)/(\rho c_\mathrm{p})$
 
 
-$$\int v  T dl + \int \Delta t \alpha \frac{\partial v}{\partial x} 
-\frac{\partial T}{\partial x} dl 
-+ \left.\Delta t \bar{h} T \right|_{x=L}
-+ \left.\Delta t \bar{h} T \right|_{x=0}
-= \Delta t \left.v \bar{h} T_\infty \right|_{x=L} 
-+ \Delta t \left.v \bar{h} T_\infty\right|_{x=0} + \int v T_n dl$$
+$$\int v  T dl + \int \Delta t \alpha \frac{\partial v}{\partial x} \frac{\partial T}{\partial x} dl + \left.\Delta t \bar{h} T \right|\_{x=L} + \left.\Delta t \bar{h} T \right|\_{x=0} = \Delta t \left.v \bar{h} T_\infty \right|\_{x=L} + \Delta t \left.v \bar{h} T_\infty\right|\_{x=0} + \int v T_n dl$$
 
 where $\bar{h} = h/(\rho c_\mathrm{p})$.
