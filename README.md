@@ -52,7 +52,7 @@ the boundary terms. Rewriting the defition of the flux as given above:
 
 This yields:
 
-$$\int v  T dl + \int \Delta t \alpha \frac{\partial v}{\partial x} \frac{\partial T}{\partial x} dl = - \Delta t \bar{q}\_0 \left.v\right|\_{x=L} - \Delta t \bar{q}_0 \left.v\right|_{x=0} + \int v T_n dl$$
+$$\int v  T dl + \int \Delta t \alpha \frac{\partial v}{\partial x} \frac{\partial T}{\partial x} dl = - \Delta t \bar{q}\_0 \left.v\right|\_{x=L} - \Delta t \bar{q}\_0 \left.v\right|_{x=0} + \int v T_n dl$$
 
 where $\bar{q}\_0 = q_0/(\rho c_\mathrm{p})$.
 
