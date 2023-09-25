@@ -8,18 +8,18 @@ ne = 50;           % number of elements
 alpha = 1;         % thermal diffusivity coefcient
 ox = 0;            % origin of the domain
 L = 1;             % length of the domain
-deltat = 1e-3;     % time step size
-nstep = 100;       % number of time steps
+deltat = 1e-2;     % time step size
+nstep = 1000;       % number of time steps
 plotevery = 10;    % plot every ... time step
 nplot = 200;       % number of points for plotting analytical solution
 nseries = 100;     % number of terms in analytical solution
-ana = 1;           % plot analytical sol 1: Cartesian 2: axisymm.
+ana = 0;           % plot analytical sol 1: Cartesian 2: axisymm.
 keepK = 1;         % 1: keep elem matrix between time steps  0: do not keep
 coorsys = 0;       % 0: Cartesion, 1: axisymmetric
-BCs = [0 0];       % BCs(1) for left and BCs(2) right side, with values:
+BCs = [0 1];       % BCs(1) for left and BCs(2) right side, with values:
                    % 0: Dirichlet, 1: Neumann, 2: Robin
 T0    = 1;         % initial temperature
-Twall = [0.1 0.1]; % wall temperature in case BCs = 0
+Twall = [1 0.1];   % wall temperature in case BCs = 0
 flux = [0 5];      % heat flux / (rho * cp) in case BCs = 1
 hheat = [10 5];    % heat transfer coeff. / (rho * cp) in case BCs = 2
 Tinf = [0 0];      % temperature at inf. in case BCs = 2
@@ -138,12 +138,13 @@ for step = 1:nstep
     end
         
     % add Neumann boundary conditions
-    if ( BCs(1) == 1 )            
+    if ( BCs(1) == 1 )
         f(1) = f(1) - facL*flux(1);
     end
 
     if ( BCs(2) == 1 )    
-        f(end) = f(end) - facR*flux(2);
+        tmp = get_flux(time);
+        f(end) = f(end) - facR*tmp;%flux(2);
     end
     
     % add Robin boundary conditions
@@ -207,6 +208,11 @@ for step = 1:nstep
     
     % store the old solution
     solold = sol;
+
+    % current flux
+    tmp_all(step) = tmp;
+    time_all(step) = time;
+    flux_all(step) = sol(end) - sol(end-1);
 
     % postprocessing
     if mod(step,plotevery) == 0
@@ -282,4 +288,51 @@ if BCs(2) == 1
     disp(['which should be = ',num2str(flux(2))])
 elseif BCs(2) == 2
     disp(['which should be = ',num2str(hheat(2)*(sol(end)-Tinf(2)))])
+end
+
+figure; plot(time_all,abs(flux_all));
+
+
+%%%%%%%%%%%%%% function definitions %%%%%%%%%%%%%%%
+
+
+function flux = get_flux(time)
+
+    % Laser source parameters
+    abs = 21;        % abs coeff of brown petg
+    reflec = 0;      % reflection of brown petg
+    sigma_mm = 1.5;  % Width of the Gaussian heat source (mm)
+    Power = 1;     % Laser Power (W)
+    scale = 1;
+
+    x_sample = 1;
+
+    x0 = get_pos(time); % beam center
+
+    %Calculate the Gaussian heat source term
+    flux = scale * exp(-(x_sample-x0).^2 / (2 * sigma_mm^2)); % W / mm3
+
+end
+
+function pos = get_pos(time)
+
+    % position parameters
+    period = 4;
+    domain_length = 10;
+
+    % calculte the speed
+    V = domain_length / (period/2);
+
+    % calculate the time in the current pass
+    time_in_pass = mod(time,period);
+    pos = zeros('like',time_in_pass);
+
+    % calculate the position
+    for i = 1:length(time_in_pass)
+        if time_in_pass(i) < period/2
+            pos(i) = V*time_in_pass(i);
+        else
+            pos(i) = domain_length - V*(time_in_pass(i)-period/2);
+        end
+    end
 end
