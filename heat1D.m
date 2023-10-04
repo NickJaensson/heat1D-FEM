@@ -16,7 +16,7 @@ nseries = 100;     % number of terms in analytical solution
 ana = 0;           % plot analytical sol 1: Cartesian 2: axisymm.
 keepK = 1;         % 1: keep elem matrix between time steps  0: do not keep
 coorsys = 0;       % 0: Cartesion, 1: axisymmetric
-BCs = [0 1];       % BCs(1) for left and BCs(2) right side, with values:
+BCs = [0 2];       % BCs(1) for left and BCs(2) right side, with values:
                    % 0: Dirichlet, 1: Neumann, 2: Robin
 T0    = 1;         % initial temperature
 Twall = [1 0.1];   % wall temperature in case BCs = 0
@@ -122,7 +122,10 @@ for step = 1:nstep
         
         % loop over the integration points
         for k = 1:2
-          fe = fe + (1/deltat)*w(k)*Ne(:,k)*Ne(:,k)'*Told'*J(k);
+          powr = get_power(time); % get the current power at the surface
+          dist = L - r; % distance from right boundary;
+          q = powr*exp(-20*dist); % get the power volume density
+          fe = fe + (1/deltat)*w(k)*Ne(:,k)*Ne(:,k)'*( Told' + q' ) *J(k);
         end       
         
         % add to the total RHS vector
@@ -143,8 +146,7 @@ for step = 1:nstep
     end
 
     if ( BCs(2) == 1 )    
-        tmp = get_flux(time);
-        f(end) = f(end) - facR*tmp;%flux(2);
+        f(end) = f(end) - facR*flux(2);
     end
     
     % add Robin boundary conditions
@@ -210,7 +212,8 @@ for step = 1:nstep
     solold = sol;
 
     % current flux
-    tmp_all(step) = tmp;
+    powr_all(step) = powr;
+    temp_all(step) = sol(end);
     time_all(step) = time;
     flux_all(step) = sol(end) - sol(end-1);
 
@@ -290,13 +293,26 @@ elseif BCs(2) == 2
     disp(['which should be = ',num2str(hheat(2)*(sol(end)-Tinf(2)))])
 end
 
-figure; plot(time_all,abs(flux_all));
+figure; 
+plot(time_all,temp_all,'LineWidth',2);
+% make the plot a bit nicer
+xlabel('$t$','Interpreter','latex')
+ylabel('$T_{end}$','Interpreter','latex')
+ax = gca; 
+ax.FontSize = 24;
 
+figure; 
+plot(time_all,powr_all,'LineWidth',2);
+% make the plot a bit nicer
+xlabel('$t$','Interpreter','latex')
+ylabel('$P$','Interpreter','latex')
+ax = gca; 
+ax.FontSize = 24;
 
 %%%%%%%%%%%%%% function definitions %%%%%%%%%%%%%%%
 
 
-function flux = get_flux(time)
+function flux = get_power(time)
 
     % Laser source parameters
     abs = 21;        % abs coeff of brown petg
